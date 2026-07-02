@@ -243,7 +243,7 @@ const AdminDashboard = () => {
         const selectedPlanDetails = plans.find(p => (p._id || p.id) === carForm.planId);
         const isWeeklyPlan = selectedPlanDetails?.washFrequency === '4 times a month';
         return (
-          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-8 rounded-3xl shadow-xl min-h-[400px]">
+          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-xl min-h-[400px]">
             <h2 className="text-2xl font-bold text-white mb-6">
               {editingCarId ? 'Edit Car Details' : 'Add New Car'}
             </h2>
@@ -319,7 +319,7 @@ const AdminDashboard = () => {
                 {cars.length > 0 ? cars.map(c => (
                   <div key={c._id || c.id} className="bg-slate-900/50 p-5 rounded-xl border border-slate-700/30 flex flex-col justify-between">
                     <div>
-                      <div className="flex justify-between items-start mb-2">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-0 mb-2">
                         <h4 className="text-white font-bold text-lg">{c.model} - {c.number}</h4>
                       </div>
                       <div className="space-y-1 mt-3">
@@ -342,7 +342,7 @@ const AdminDashboard = () => {
         );
       case 'plans':
         return (
-          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-8 rounded-3xl shadow-xl min-h-[400px]">
+          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-xl min-h-[400px]">
             <h2 className="text-2xl font-bold text-white mb-6">
               {editingPlanId ? 'Edit Subscription Plan' : 'Add Subscription Plan'}
             </h2>
@@ -404,9 +404,9 @@ const AdminDashboard = () => {
                 {plans.length > 0 ? plans.map(p => (
                   <div key={p._id || p.id} className="bg-slate-900/50 p-5 rounded-xl border border-slate-700/30 flex flex-col justify-between">
                     <div>
-                      <div className="flex justify-between items-start mb-2">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-0 mb-2">
                         <h4 className="text-white font-bold text-lg">{p.name}</h4>
-                        <span className="bg-blue-500/20 text-blue-400 px-2 py-1 rounded text-xs font-bold">₹{p.price}</span>
+                        <span className="bg-blue-500/20 text-blue-400 px-2 py-1 rounded text-xs font-bold w-fit">₹{p.price}</span>
                       </div>
                       <div className="space-y-1 mt-3">
                         <p className="text-slate-400 text-sm"><span className="text-slate-500">Duration:</span> {p.durationDays} Days</p>
@@ -427,7 +427,7 @@ const AdminDashboard = () => {
         );
       case 'enquiries':
         return (
-          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-8 rounded-3xl shadow-xl min-h-[400px]">
+          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-xl min-h-[400px]">
             <h2 className="text-2xl font-bold text-white mb-6">Customer Enquiries</h2>
             <div className="space-y-4">
               {enquiries.length > 0 ? enquiries.map((enq, i) => (
@@ -478,7 +478,7 @@ const AdminDashboard = () => {
         );
       case 'washlist':
         return (
-          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-8 rounded-3xl shadow-xl min-h-[400px]">
+          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-xl min-h-[400px]">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
               <h2 className="text-2xl font-bold text-white">Daily Wash List</h2>
               <div className="flex items-center gap-3">
@@ -497,8 +497,8 @@ const AdminDashboard = () => {
                 const isPastDue = new Date(wash.date).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
                 return (
                 <div key={i} className={`bg-slate-900/50 p-5 rounded-xl flex flex-col border transition-colors hover:border-slate-600/50 ${isPastDue && wash.status !== 'Completed' ? 'border-rose-500/30' : 'border-slate-700/30'}`}>
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-start gap-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div className="flex items-start gap-4 w-full">
                       <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700">
                         {wash.status === 'Completed' ? <CheckCircle className="text-emerald-400 w-5 h-5" /> : <Clock className="text-amber-400 w-5 h-5" />}
                       </div>
@@ -521,11 +521,11 @@ const AdminDashboard = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end shrink-0">
+                    <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold ${wash.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400' : isPastDue ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}`}>
                         {wash.status || 'Pending'} {isPastDue && wash.status !== 'Completed' ? '(Past Due)' : ''}
                       </span>
-                      <span className="text-xs text-slate-500 mt-2 font-medium">{washDateStr}</span>
+                      <span className="text-xs text-slate-500 mt-0 sm:mt-2 font-medium">{washDateStr}</span>
                     </div>
                   </div>
 
@@ -554,7 +554,7 @@ const AdminDashboard = () => {
         );
       case 'users':
         return (
-          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-8 rounded-3xl shadow-xl min-h-[400px]">
+          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-xl min-h-[400px]">
             <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2"><UserPlus className="w-6 h-6 text-blue-400" /> System Users</h2>
             
             <div className="bg-slate-900/50 p-6 rounded-2xl border border-slate-700/50 mb-10">
@@ -582,14 +582,16 @@ const AdminDashboard = () => {
                 {systemUsers.map((user, i) => (
                   <div key={user._id || user.id || i} className="bg-slate-900/50 p-5 rounded-xl border border-slate-700/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <div className="flex items-center gap-3 mb-2">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-2">
                         <h4 className="text-white font-bold text-lg">{user.name}</h4>
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                          {user.role.toUpperCase()}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${user.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                          {user.isActive ? 'ACTIVE' : 'INACTIVE'}
-                        </span>
+                        <div className="flex gap-2">
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                            {user.role.toUpperCase()}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold ${user.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                            {user.isActive ? 'ACTIVE' : 'INACTIVE'}
+                          </span>
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <p className="text-slate-400 text-sm"><span className="text-slate-500">Email:</span> {user.email}</p>
