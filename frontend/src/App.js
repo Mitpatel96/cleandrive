@@ -2,8 +2,10 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import Landing from "./pages/Landing";
-import Admin from "./pages/Admin";
-import AdminLogin from "./pages/AdminLogin";
+import Login from "./pages/Login";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import StaffDashboard from "./pages/staff/StaffDashboard";
+import CustomerDashboard from "./pages/customer/CustomerDashboard";
 
 function App() {
   return (
@@ -11,8 +13,10 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/staff" element={<StaffDashboard />} />
+          <Route path="/customer" element={<CustomerDashboard />} />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-center" richColors />

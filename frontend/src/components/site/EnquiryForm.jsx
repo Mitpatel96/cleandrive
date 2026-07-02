@@ -16,8 +16,7 @@ import { toast } from "sonner";
 import { CheckCircle2, Loader2, Phone, MapPin } from "lucide-react";
 import { PLAN_OPTIONS, TIME_SLOTS } from "../../lib/plans";
 import { BUSINESS } from "../../lib/business";
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import api from "../../lib/api";
 
 const empty = {
   full_name: "",
@@ -56,7 +55,7 @@ export default function EnquiryForm() {
     setSubmitting(true);
     try {
       const payload = { ...form, email: form.email || null, message: form.message || null };
-      await axios.post(`${API}/enquiries`, payload);
+      await api.post(`/enquiries`, payload);
       setDone(true);
       setForm(empty);
       toast.success("Enquiry sent! We'll call you shortly.");
