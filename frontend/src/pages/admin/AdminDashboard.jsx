@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, CreditCard, MessageSquare, LayoutDashboard, Settings, LogOut, CheckCircle, Clock, UserPlus, MapPin, Home, Camera } from 'lucide-react';
+import { Car, CreditCard, MessageSquare, LayoutDashboard, Settings, LogOut, CheckCircle, Clock, UserPlus, MapPin, Home, Camera, Menu, X } from 'lucide-react';
 import api from '../../lib/api';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [stats, setStats] = useState({ revenue: 24500, activePlans: 1204, pendingWashes: 0 });
   const [cars, setCars] = useState([]);
@@ -624,16 +625,30 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-950 font-sans selection:bg-blue-500/30">
+    <div className="flex h-screen bg-slate-950 font-sans selection:bg-blue-500/30 overflow-hidden">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-72 bg-slate-900/50 border-r border-slate-800/50 flex flex-col backdrop-blur-xl z-10">
-        <div className="p-8">
+      <aside className={`fixed md:static inset-y-0 left-0 w-72 bg-slate-900 border-r border-slate-800/50 flex flex-col z-50 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+        <div className="p-6 md:p-8 flex justify-between items-center">
           <div className="flex items-center gap-3 text-white">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
               <Car className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">CleanDrive</h1>
           </div>
+          <button 
+            className="md:hidden text-slate-400 hover:text-white p-1"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
@@ -642,7 +657,10 @@ const AdminDashboard = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive 
                     ? 'bg-blue-600/10 text-blue-400 font-medium' 
@@ -669,11 +687,19 @@ const AdminDashboard = () => {
           <div className="absolute -top-[20%] right-[10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]"></div>
         </div>
         
-        <div className="relative z-10 p-10">
-          <header className="flex justify-between items-center mb-10">
-            <div>
-              <h2 className="text-3xl font-bold text-white tracking-tight">Admin Area</h2>
-              <p className="text-slate-400 mt-1">Manage your car wash business</p>
+        <div className="relative z-10 p-4 md:p-10 h-full overflow-y-auto">
+          <header className="flex justify-between items-start md:items-center mb-6 md:mb-10">
+            <div className="flex items-center gap-3 md:gap-0">
+              <button 
+                onClick={() => setSidebarOpen(true)}
+                className="md:hidden p-2 -ml-2 text-slate-400 hover:text-white"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Admin Area</h2>
+                <p className="text-slate-400 text-sm md:text-base mt-1">Manage your business</p>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center cursor-pointer hover:bg-slate-700 transition-colors">
