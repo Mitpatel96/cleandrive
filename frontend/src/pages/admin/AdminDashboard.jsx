@@ -535,10 +535,10 @@ const AdminDashboard = () => {
                       </p>
                       <div className="rounded-xl overflow-hidden border border-slate-700/50 inline-block bg-black shadow-lg">
                         <img 
-                          src={`http://localhost:5001${wash.completionPhotoUrl}`} 
+                          src={`${process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'http://localhost:5001'}${wash.completionPhotoUrl}`} 
                           alt="Wash Proof" 
                           className="h-40 w-auto object-cover hover:scale-105 transition-transform cursor-pointer"
-                          onClick={() => window.open(`http://localhost:5001${wash.completionPhotoUrl}`, '_blank')}
+                          onClick={() => window.open(`${process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'http://localhost:5001'}${wash.completionPhotoUrl}`, '_blank')}
                           title="Click to view full size"
                         />
                       </div>
