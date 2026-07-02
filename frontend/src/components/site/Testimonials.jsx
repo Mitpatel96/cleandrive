@@ -7,7 +7,8 @@ const REVIEWS = [
     initials: "RP",
     area: "Vesu, Surat",
     stars: 5,
-    photo: "https://images.unsplash.com/photo-1618077360395-f3068be8e001?w=240&h=240&fit=crop&crop=faces",
+    photo: "/testimonials/rakesh.jpg",
+    unsplash: "https://images.unsplash.com/photo-1618077360395-f3068be8e001?w=240&h=240&fit=crop&crop=faces",
     text: "Genuinely the smoothest car-care experience I've had in Surat. My i20 looks brand new every morning and I never have to think about it.",
   },
   {
@@ -15,7 +16,8 @@ const REVIEWS = [
     initials: "MS",
     area: "Adajan",
     stars: 5,
-    photo: "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?w=240&h=240&fit=crop&crop=faces",
+    photo: "/testimonials/meera.jpg",
+    unsplash: "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?w=240&h=240&fit=crop&crop=faces",
     text: "The team is punctual, polite and super careful with the paint. Nano cloth actually makes a visible difference — zero swirl marks.",
   },
   {
@@ -23,7 +25,8 @@ const REVIEWS = [
     initials: "HD",
     area: "Piplod",
     stars: 5,
-    photo: "https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=240&h=240&fit=crop&crop=faces",
+    photo: "/testimonials/harsh.jpg",
+    unsplash: "https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=240&h=240&fit=crop&crop=faces",
     text: "Switched from the neighbourhood cleaner and the difference is night and day. Worth every rupee for the alternate-days plan.",
   },
   {
@@ -31,13 +34,26 @@ const REVIEWS = [
     initials: "NJ",
     area: "Athwa Lines",
     stars: 5,
-    photo: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=240&h=240&fit=crop&crop=faces",
+    photo: "/testimonials/nikita.jpg",
+    unsplash: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=240&h=240&fit=crop&crop=faces",
     text: "Loved that they use very little water. Feels premium and eco-conscious at the same time. Highly recommended.",
   },
 ];
 
 const fallback = (initials) =>
   `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=0066FF&color=ffffff&size=240&bold=true&format=png`;
+
+function handleImgError(e, review) {
+  const img = e.currentTarget;
+  const step = img.dataset.fbStep || "0";
+  if (step === "0") {
+    img.dataset.fbStep = "1";
+    img.src = review.unsplash;
+  } else if (step === "1") {
+    img.dataset.fbStep = "2";
+    img.src = fallback(review.initials);
+  }
+}
 
 export default function Testimonials() {
   return (
@@ -93,9 +109,8 @@ export default function Testimonials() {
                     alt={r.name}
                     loading="lazy"
                     data-testid={`testimonial-avatar-${i}`}
-                    onError={(e) => {
-                      e.currentTarget.src = fallback(r.initials);
-                    }}
+                    data-fb-step="0"
+                    onError={(e) => handleImgError(e, r)}
                     className="h-11 w-11 rounded-full border-2 border-white object-cover shadow-sm ring-1 ring-slate-200"
                   />
                   <div>
@@ -116,10 +131,11 @@ export default function Testimonials() {
         </div>
 
         <p className="mt-8 text-center text-xs text-slate-400">
-          Photos are illustrative — swap with your real customer photos anytime from
+          Drop real customer photos into
           <code className="mx-1 rounded bg-cloud px-1.5 py-0.5 text-slate-500">
-            Testimonials.jsx
+            /public/testimonials/&lt;name&gt;.jpg
           </code>
+          — they&apos;ll appear automatically.
         </p>
       </div>
     </section>
