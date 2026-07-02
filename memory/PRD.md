@@ -34,6 +34,18 @@ morning doorstep service, eco-friendly and water-efficient.
 - Admin dashboard listing enquiries with status pill
 - Fully passed automated backend + frontend tests (iteration_1)
 
+## Iteration 2 (2025-12)
+- Real business contact info: +91 99251 51405, info@thecleandrive.in, Instagram cleandrive.in
+- CleanDrive brand logo (white on transparent) integrated in header + footer + admin login
+- Testimonials section (4 review cards) with aggregate rating badge
+- Floating WhatsApp button (bottom-right) with pre-filled enquiry message
+- SEO: title, meta description/keywords, OpenGraph, Twitter card, JSON-LD LocalBusiness schema
+- Admin authentication: JWT Bearer (bcrypt hashed password), admin seeded from env on startup
+  - Login page at `/admin/login`, dashboard protected at `/admin` (token in localStorage `cd_admin_token`)
+  - Public `POST /api/enquiries` unchanged; `GET /api/enquiries` requires admin token
+- Test credentials stored in `/app/memory/test_credentials.md`
+- Iteration 2 tests: 100% backend + frontend
+
 ## Backlog (P1)
 - Replace phone/email placeholders with real business contact
 - Admin authentication (JWT / basic)
