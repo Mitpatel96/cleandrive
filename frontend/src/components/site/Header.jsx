@@ -1,28 +1,36 @@
 import { Button } from "../ui/button";
-import { Droplets } from "lucide-react";
+import { BUSINESS } from "../../lib/business";
 
 export default function Header() {
   const nav = [
     { href: "#why", label: "Why Us" },
     { href: "#process", label: "Process" },
     { href: "#pricing", label: "Pricing" },
+    { href: "#testimonials", label: "Reviews" },
     { href: "#enquiry", label: "Enquiry" },
   ];
   return (
     <header
       data-testid="site-header"
-      className="sticky top-0 z-50 border-b border-black/5 bg-white/70 backdrop-blur-xl"
+      className="sticky top-0 z-50 border-b border-black/5 bg-white/80 backdrop-blur-xl"
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         <a
           href="#top"
           data-testid="brand-link"
-          className="flex items-center gap-2 font-heading text-xl font-extrabold tracking-tight text-navy"
+          className="flex items-center gap-3"
+          aria-label={BUSINESS.name}
         >
-          <span className="grid h-8 w-8 place-items-center rounded-md bg-brand text-white">
-            <Droplets size={18} strokeWidth={2.5} />
+          <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-lg bg-navy shadow-sm">
+            <img
+              src="/cleandrive-logo-white.png"
+              alt="CleanDrive"
+              className="h-6 w-auto object-contain"
+            />
           </span>
-          CleanDrive
+          <span className="hidden font-heading text-lg font-extrabold tracking-tight text-navy sm:block">
+            CleanDrive
+          </span>
         </a>
 
         <nav className="hidden items-center gap-8 md:flex">

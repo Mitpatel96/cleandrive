@@ -1,20 +1,26 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
-import { Loader2, RefreshCw, Mail, Phone, MapPin, Car } from "lucide-react";
-
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+import { Loader2, RefreshCw, Mail, Phone, MapPin, Car, LogOut } from "lucide-react";
+import { fetchEnquiries, fetchMe, clearToken, getToken } from "../lib/authApi";
 
 export default function Admin() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState("");
+  const navigate = useNavigate();
 
   const load = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/enquiries`);
-      setItems(res.data);
+      const [me, data] = await Promise.all([fetchMe(), fetchEnquiries()]);
+      setEmail(me.email);
+      setItems(data);
     } catch (e) {
+      if (e?.response?.status === 401) {
+        clearToken();
+        navigate("/admin/login", { replace: true });
+      }
       console.error(e);
     } finally {
       setLoading(false);
@@ -22,28 +28,52 @@ export default function Admin() {
   };
 
   useEffect(() => {
+    if (!getToken()) {
+      navigate("/admin/login", { replace: true });
+      return;
+    }
     load();
   }, []);
+
+  const logout = () => {
+    clearToken();
+    navigate("/admin/login", { replace: true });
+  };
 
   return (
     <div data-testid="admin-page" className="min-h-screen bg-cloud">
       <div className="mx-auto max-w-7xl px-6 py-10">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="font-mono-label text-brand">CleanDrive Admin</div>
             <h1 className="mt-2 font-heading text-3xl font-extrabold tracking-tight text-navy sm:text-4xl">
-              Enquiries ({items.length})
+              Enquiries {items.length ? `(${items.length})` : ""}
             </h1>
+            {email && (
+              <div className="mt-1 text-sm text-slate-500">
+                Signed in as <span className="font-semibold text-navy">{email}</span>
+              </div>
+            )}
           </div>
-          <Button
-            onClick={load}
-            data-testid="admin-refresh-button"
-            variant="outline"
-            className="rounded-full border-slate-300 text-navy hover:bg-white"
-          >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-            <span className="ml-2">Refresh</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={load}
+              data-testid="admin-refresh-button"
+              variant="outline"
+              className="rounded-full border-slate-300 text-navy hover:bg-white"
+            >
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+              <span className="ml-2">Refresh</span>
+            </Button>
+            <Button
+              onClick={logout}
+              data-testid="admin-logout-button"
+              className="rounded-full bg-navy text-white hover:bg-black"
+            >
+              <LogOut size={16} />
+              <span className="ml-2">Logout</span>
+            </Button>
+          </div>
         </div>
 
         <div className="mt-8">

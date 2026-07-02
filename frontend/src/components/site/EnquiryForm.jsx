@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { CheckCircle2, Loader2, Phone, MapPin } from "lucide-react";
 import { PLAN_OPTIONS, TIME_SLOTS } from "../../lib/plans";
+import { BUSINESS } from "../../lib/business";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -96,9 +97,13 @@ export default function EnquiryForm() {
                 </div>
                 <div>
                   <div className="font-mono-label text-slate-500">Call / WhatsApp</div>
-                  <div className="mt-1 font-heading font-bold text-navy">
-                    +91 XXXXX XXXXX
-                  </div>
+                  <a
+                    href={`tel:${BUSINESS.phoneRaw}`}
+                    data-testid="enquiry-phone"
+                    className="mt-1 block font-heading font-bold text-navy hover:text-brand"
+                  >
+                    {BUSINESS.phoneDisplay}
+                  </a>
                 </div>
               </div>
               <div className="flex items-start gap-3">

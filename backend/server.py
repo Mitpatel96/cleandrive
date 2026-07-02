@@ -1,32 +1,40 @@
-from fastapi import FastAPI, APIRouter, HTTPException
 from dotenv import load_dotenv
+load_dotenv()
+
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import uuid
 import httpx
+import bcrypt
+import jwt
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import List, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
+# MongoDB
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Email config (Emergent managed proxy)
+# Email config
 EMAIL_BASE_URL = "https://integrations.emergentagent.com"
 EMAIL_KEY = os.environ.get("EMERGENT_EMAIL_KEY")
 EMAIL_FROM_NAME = os.environ.get("EMAIL_FROM_NAME", "CleanDrive")
-NOTIFICATION_EMAIL = os.environ.get("NOTIFICATION_EMAIL", "info@cleandrive.in")
+NOTIFICATION_EMAIL = os.environ.get("NOTIFICATION_EMAIL", "info@thecleandrive.in")
 
-app = FastAPI()
+# JWT / Auth
+JWT_SECRET = os.environ.get("JWT_SECRET", "change-me")
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_TTL_MIN = 60 * 12  # 12 hours
+
+app = FastAPI(title="CleanDrive API")
 api_router = APIRouter(prefix="/api")
 
 logging.basicConfig(
@@ -36,13 +44,54 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# ------------------ Helpers ------------------
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(plain: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    except Exception:
+        return False
+
+
+def create_access_token(email: str) -> str:
+    payload = {
+        "sub": email,
+        "role": "admin",
+        "type": "access",
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_TTL_MIN),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+async def get_current_admin(request: Request) -> dict:
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    token = auth[7:].strip()
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    if payload.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden")
+    user = await db.users.find_one({"email": payload.get("sub")}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+
 # ------------------ Models ------------------
 class EnquiryCreate(BaseModel):
     full_name: str = Field(..., min_length=1, max_length=100)
     phone: str = Field(..., min_length=6, max_length=20)
     email: Optional[EmailStr] = None
     address: str = Field(..., min_length=1, max_length=500)
-    car_type: str  # "5 Seater" | "7 Seater"
+    car_type: str
     preferred_plan: str
     preferred_time_slot: str
     message: Optional[str] = Field(default=None, max_length=1000)
@@ -64,7 +113,18 @@ class Enquiry(BaseModel):
     email_sent: bool = False
 
 
-# ------------------ Email helper ------------------
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    email: str
+
+
+# ------------------ Email ------------------
 def build_enquiry_email_html(enq: Enquiry) -> str:
     def row(label, value):
         return (
@@ -168,12 +228,57 @@ async def create_enquiry(input: EnquiryCreate):
 
 
 @api_router.get("/enquiries", response_model=List[Enquiry])
-async def list_enquiries():
+async def list_enquiries(_admin: dict = Depends(get_current_admin)):
     items = await db.enquiries.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     for it in items:
         if isinstance(it.get("created_at"), str):
             it["created_at"] = datetime.fromisoformat(it["created_at"])
     return items
+
+
+@api_router.post("/auth/login", response_model=LoginResponse)
+async def admin_login(payload: LoginRequest):
+    email = payload.email.lower().strip()
+    user = await db.users.find_one({"email": email})
+    if not user or not verify_password(payload.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not an admin")
+    token = create_access_token(email)
+    return LoginResponse(access_token=token, email=email)
+
+
+@api_router.get("/auth/me")
+async def me(user: dict = Depends(get_current_admin)):
+    return {"email": user.get("email"), "role": user.get("role")}
+
+
+# ------------------ Startup ------------------
+@app.on_event("startup")
+async def on_startup():
+    admin_email = os.environ.get("ADMIN_EMAIL", "admin@example.com").lower().strip()
+    admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    existing = await db.users.find_one({"email": admin_email})
+    if existing is None:
+        await db.users.insert_one({
+            "email": admin_email,
+            "password_hash": hash_password(admin_password),
+            "role": "admin",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+        logger.info(f"Seeded admin user: {admin_email}")
+    else:
+        if not verify_password(admin_password, existing["password_hash"]):
+            await db.users.update_one(
+                {"email": admin_email},
+                {"$set": {"password_hash": hash_password(admin_password)}},
+            )
+            logger.info("Admin password re-hashed from env")
+    try:
+        await db.users.create_index("email", unique=True)
+        await db.enquiries.create_index("created_at")
+    except Exception as e:
+        logger.warning(f"Index creation warning: {e}")
 
 
 app.include_router(api_router)

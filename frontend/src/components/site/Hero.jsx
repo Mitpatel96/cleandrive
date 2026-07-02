@@ -19,7 +19,7 @@ export default function Hero() {
             className="flex items-center gap-2 text-sm text-brand"
           >
             <span className="font-mono-label text-brand">
-              Doorstep Car Wash · Surat
+              Shine on Schedule · Surat
             </span>
           </motion.div>
 
