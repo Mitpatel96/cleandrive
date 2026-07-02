@@ -20,12 +20,19 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files (for uploads)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Routes
+// Routes (With /api prefix for local dev and standard proxies)
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/staff', require('./routes/staffRoutes'));
 app.use('/api/customer', require('./routes/customerRoutes'));
 app.use('/api/enquiries', require('./routes/enquiryRoutes'));
+
+// Routes (Without /api prefix for reverse proxies that strip the base path, e.g. cPanel Passenger)
+app.use('/auth', require('./routes/authRoutes'));
+app.use('/admin', require('./routes/adminRoutes'));
+app.use('/staff', require('./routes/staffRoutes'));
+app.use('/customer', require('./routes/customerRoutes'));
+app.use('/enquiries', require('./routes/enquiryRoutes'));
 
 app.get('/', (req, res) => {
   res.send('API is running...');
