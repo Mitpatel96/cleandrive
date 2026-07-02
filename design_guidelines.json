@@ -1,0 +1,119 @@
+{
+  "theme_and_archetype": {
+    "theme": "LIGHT",
+    "archetype": "4 (Swiss & High-Contrast) adapted for premium local service",
+    "rationale": "Conveys premium quality, authority, trust, and immaculate cleanliness for a doorstep car wash service in Surat."
+  },
+  "typography": {
+    "fonts": {
+      "headings": "Outfit, sans-serif",
+      "body": "Manrope, sans-serif"
+    },
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight",
+      "h3": "text-xl sm:text-2xl tracking-tight",
+      "h4": "text-lg sm:text-xl",
+      "body": "text-base leading-relaxed",
+      "labels": "text-sm uppercase tracking-[0.2em]"
+    }
+  },
+  "colors": {
+    "background": {
+      "primary": "#FFFFFF",
+      "secondary": "#F0F4F8",
+      "dark_section": "#0A2540"
+    },
+    "text": {
+      "primary": "#0A2540",
+      "secondary": "#475569",
+      "inverse": "#FFFFFF"
+    },
+    "brand": {
+      "primary": "#0066FF",
+      "primary_hover": "#0052CC"
+    },
+    "accents": {
+      "highlight": "#38BDF8"
+    }
+  },
+  "spacing_and_layout": {
+    "general": "Use generous spacing (p-12, p-24, py-32). Mobile-first responsive design.",
+    "grids": "Use 'Bento' Mode A (Tetris Grid) for 'Why Choose Us'. Use CSS Grid with generous gaps (gap-8, gap-12) for Pricing and Process sections.",
+    "containers": "Max-width container (max-w-7xl) centered. Internal padding for bordered containers (p-6 to p-8).",
+    "alignment": "Left-align dense text and form inputs. Optical alignment for buttons with icons."
+  },
+  "surfaces_and_components": {
+    "header": "Crystal Glassmorphism (bg-white/70 backdrop-blur-xl border-b border-black/5). Sticky top with z-50. Navigation links and Book Now CTA must be visible on desktop.",
+    "cards": "Neumorphic/Tactile variant. Flat background (bg-white), 1px subtle border (border-slate-200), no default shadow. Hover: slight lift (-translate-y-1) and shadow-lg.",
+    "buttons": "Primary CTA uses Brand Primary (#0066FF) with white text. Explicit hover states (bg-[#0052CC]). Must include data-testid.",
+    "forms": "Use Shadcn customized form components (Input, Select, Textarea). Slightly rounded edges (rounded-md). High contrast focus states.",
+    "footer": "Contrast shift: Dark footer (bg-[#0A2540] text-white). Massive 'CLEANDRIVE' text (text-[10vw] or text-6xl for scale) and copyright."
+  },
+  "sections": [
+    {
+      "name": "Hero",
+      "layout": "Asymmetrical split. Heavy typography for H1 'Premium Doorstep Car Wash in Surat'. Prominent 'Book Now' CTA. Hero image overlay max bg-black/30 or bg-white/20 depending on placement.",
+      "content": "Company name: CleanDrive. Emphasize trust and convenience."
+    },
+    {
+      "name": "About / Why Choose Us",
+      "layout": "Bento Grid (md:grid-cols-8 lg:grid-cols-12). Highlight USPs: Trained staff, premium cleaning liquid, nano polish cloth (scratch protection), daily morning service, eco-friendly.",
+      "visuals": "Use subtle icons (lucide-react) and large accent numbers."
+    },
+    {
+      "name": "How We Clean (3-Step)",
+      "layout": "3-column grid. Large typography numbers (01, 02, 03).",
+      "steps": "Step 1: Remove Dust & Loose Dirt. Step 2: Spray & Clean. Step 3: Wipe with Microfibre Cloth."
+    },
+    {
+      "name": "Pricing Plans",
+      "layout": "Tabs component to toggle between '5 Seater' and '7 Seater'. 4 pricing cards per tab: Monthly Daily, 90 Days, Alternate Days, 4-Time Cleaning. Include 'Choose Plan' CTA per card."
+    },
+    {
+      "name": "Enquiry Form",
+      "layout": "Structured grid for form fields. Fields: Full Name, Phone, Email (optional), Address/Area, Car Type, Preferred Plan, Preferred Time Slot, Message. Solid Submit Button.",
+      "technical": "Use Shadcn Select for dropdowns (Car Type, Plan, Time Slot)."
+    }
+  ],
+  "motion_and_interactions": {
+    "scroll": "Smooth scroll enabled. Framer motion for staggered entrance animations (fade-in and slight slide-up).",
+    "hover": "Explicit hover states on interactive elements. Pricing cards lift on hover.",
+    "accessibility": "Respect prefers-reduced-motion."
+  },
+  "accessibility": {
+    "contrast": "Ensure minimum 4.5:1 ratio for normal text. White text on Primary Blue passes AA.",
+    "testing": "CRITICAL: All interactive elements MUST have data-testid attributes (e.g., data-testid='hero-book-now-button', data-testid='pricing-monthly-plan-button', data-testid='enquiry-submit')."
+  },
+  "media": {
+    "hero": {
+      "url": "https://images.pexels.com/photos/6873074/pexels-photo-6873074.jpeg",
+      "description": "Sleek black luxury car inside car wash, premium feel."
+    },
+    "process_1": {
+      "url": "https://images.pexels.com/photos/6872582/pexels-photo-6872582.jpeg",
+      "description": "Black luxury car with soapy foam (Remove Dust & Wash)."
+    },
+    "process_2": {
+      "url": "https://images.pexels.com/photos/6872151/pexels-photo-6872151.jpeg",
+      "description": "Vehicle being washed with water and soap."
+    },
+    "process_3": {
+      "url": "https://images.unsplash.com/photo-1732357624591-f2137085659b",
+      "description": "Person cleaning a car with a yellow microfiber cloth."
+    }
+  },
+  "tech_stack_instructions": {
+    "frameworks": "React, Tailwind CSS, Shadcn UI",
+    "icons": "lucide-react",
+    "animations": "framer-motion",
+    "components_to_use": [
+      "Button",
+      "Input",
+      "Textarea",
+      "Select",
+      "Tabs",
+      "Card"
+    ]
+  }
+}
