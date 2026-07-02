@@ -1,0 +1,24 @@
+{
+  "summary": "Smoke-tested CleanDrive backend (health, POST/GET enquiries, validation, optional email) and frontend (landing sections, hero CTA, pricing tabs, choose-plan prefill, full enquiry submission end-to-end, admin listing). All checks passed.",
+  "tested_scope": ["backend", "frontend", "integration"],
+  "passed": [
+    "GET /api/ -> 200 {status: ok}",
+    "POST /api/enquiries valid payload -> 200, returns id and email_sent=true, persisted to Mongo",
+    "POST /api/enquiries invalid car_type -> 400 'Invalid car type'",
+    "POST /api/enquiries missing required fields -> 422",
+    "POST /api/enquiries without optional email/message -> 200 with email_sent=true",
+    "GET /api/enquiries -> 200, sorted desc by created_at, no _id leak",
+    "Landing renders all sections: site-header, hero-section, why-section, process-section, pricing-section, enquiry-section, site-footer",
+    "hero-book-now-button scrolls to #enquiry",
+    "tab-5-seater shows ₹999 (Monthly Daily), tab-7-seater shows ₹1199",
+    "choose-plan-monthly-daily-5-seater prefills Preferred Plan='Monthly Plans - 5 Seater (₹999/month)' and Car Type='5 Seater' via cleandrive:choose-plan event",
+    "Enquiry form submission via UI displays enquiry-success and record appears in GET /api/enquiries and /admin listing"
+  ],
+  "failed": [],
+  "action_items": [
+    "Minor doc note: form field test-ids are input-full-name/input-phone/input-email/input-address/select-car-type/select-plan/select-time-slot (not the enquiry-* names in the review request). Not a bug."
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "retest_needed": false,
+  "full_testing_deferred": true
+}
