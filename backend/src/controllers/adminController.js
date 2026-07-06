@@ -301,3 +301,61 @@ exports.updateSystemUser = async (req, res) => {
     res.status(200).json({ success: true, data: userResponse });
   } catch (err) { res.status(400).json({ success: false, error: err.message }); }
 };
+
+exports.getDashboardStats = async (req, res) => {
+  try {
+    const now = new Date();
+    const activePlans = await Subscription.countDocuments({
+      status: 'Active',
+      endDate: { $gte: now }
+    });
+    
+    const subscriptions = await Subscription.find().populate('plan');
+    const revenue = subscriptions.reduce((sum, sub) => {
+      if (sub.plan && typeof sub.plan.price === 'number') {
+        return sum + sub.plan.price;
+      }
+      return sum;
+    }, 0);
+
+    const pendingWashes = await WashSchedule.countDocuments({ status: 'Pending' });
+
+    // Exclude cars with active plans
+    const activeSubs = await Subscription.find({
+      status: 'Active',
+      endDate: { $gte: now }
+    });
+    const activeCarIds = activeSubs.map(s => s.car.toString());
+
+    // Find expired subscriptions
+    const expiredSubs = await Subscription.find({
+      car: { $nin: activeCarIds }
+    }).populate('customer car plan').sort({ endDate: -1 });
+
+    const uniqueExpired = [];
+    const seenCars = new Set();
+    for (const sub of expiredSubs) {
+      if (sub.car && sub.car._id) {
+        const carId = sub.car._id.toString();
+        const isExpired = sub.status === 'Expired' || new Date(sub.endDate) < now;
+        if (isExpired && !seenCars.has(carId)) {
+          seenCars.add(carId);
+          uniqueExpired.push(sub);
+        }
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        revenue,
+        activePlans,
+        pendingWashes,
+        expiredSubscriptions: uniqueExpired
+      }
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+

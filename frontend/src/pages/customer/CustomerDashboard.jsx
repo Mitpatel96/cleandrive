@@ -47,7 +47,7 @@ const CustomerDashboard = () => {
                       Premium Member
                     </div>
                     <h3 className="text-3xl font-bold text-white">Unlimited Shine Plan</h3>
-                    <p className="text-slate-400 mt-2">Billed $59.99 monthly</p>
+                    <p className="text-slate-400 mt-2">Billed ₹4,999 monthly</p>
                   </div>
                   
                   <div className="text-left md:text-right">

@@ -8,8 +8,10 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [stats, setStats] = useState({ revenue: 24500, activePlans: 1204, pendingWashes: 0 });
+  const [stats, setStats] = useState({ revenue: 0, activePlans: 0, pendingWashes: 0 });
   const [cars, setCars] = useState([]);
+  const [expiredPlans, setExpiredPlans] = useState([]);
+  const [selectedExpiredPlan, setSelectedExpiredPlan] = useState(null);
   const [plans, setPlans] = useState([]);
   const [staffList, setStaffList] = useState([]);
   const [enquiries, setEnquiries] = useState([]);
@@ -33,9 +35,15 @@ const AdminDashboard = () => {
     const fetchData = async () => {
       try {
         if (activeTab === 'dashboard') {
-          const res = await api.get('/admin/pending-washes');
-          const count = res.data.length !== undefined ? res.data.length : (res.data.count || 0);
-          setStats(prev => ({ ...prev, pendingWashes: count }));
+          const res = await api.get('/admin/stats');
+          if (res.data && res.data.data) {
+            setStats({
+              revenue: res.data.data.revenue || 0,
+              activePlans: res.data.data.activePlans || 0,
+              pendingWashes: res.data.data.pendingWashes || 0
+            });
+            setExpiredPlans(res.data.data.expiredSubscriptions || []);
+          }
         } else if (activeTab === 'enquiries') {
           const res = await api.get('/admin/enquiries');
           setEnquiries(res.data.data ? res.data.data : res.data);
@@ -215,27 +223,85 @@ const AdminDashboard = () => {
     switch(activeTab) {
       case 'dashboard':
         return (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl">
-              <h3 className="text-slate-400 text-sm font-medium">Total Revenue</h3>
-              <p className="text-3xl font-bold text-white mt-2">${stats.revenue}</p>
-              <div className="mt-4 flex items-center text-sm text-emerald-400">
-                <span>+12.5% from last month</span>
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl">
+                <h3 className="text-slate-400 text-sm font-medium">Total Revenue</h3>
+                <p className="text-3xl font-bold text-white mt-2">₹{stats.revenue.toLocaleString('en-IN')}</p>
+                <div className="mt-4 flex items-center text-sm text-emerald-400">
+                  <span>Updates live</span>
+                </div>
+              </div>
+              <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl">
+                <h3 className="text-slate-400 text-sm font-medium">Active Plans</h3>
+                <p className="text-3xl font-bold text-white mt-2">{stats.activePlans}</p>
+                <div className="mt-4 flex items-center text-sm text-emerald-400">
+                  <span>Updates live</span>
+                </div>
+              </div>
+              <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl">
+                <h3 className="text-slate-400 text-sm font-medium">Pending Washes</h3>
+                <p className="text-3xl font-bold text-white mt-2">{stats.pendingWashes}</p>
+                <div className="mt-4 flex items-center text-sm text-rose-400">
+                  <span>Updates live</span>
+                </div>
               </div>
             </div>
+
             <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl">
-              <h3 className="text-slate-400 text-sm font-medium">Active Plans</h3>
-              <p className="text-3xl font-bold text-white mt-2">{stats.activePlans}</p>
-              <div className="mt-4 flex items-center text-sm text-emerald-400">
-                <span>+8% from last month</span>
-              </div>
-            </div>
-            <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl">
-              <h3 className="text-slate-400 text-sm font-medium">Pending Washes</h3>
-              <p className="text-3xl font-bold text-white mt-2">{stats.pendingWashes}</p>
-              <div className="mt-4 flex items-center text-sm text-rose-400">
-                <span>Updates live</span>
-              </div>
+              <h3 className="text-xl font-bold text-white mb-6">Expired Plans</h3>
+              {expiredPlans.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-slate-300 border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700/50 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                        <th className="py-3 px-4">Car Details</th>
+                        <th className="py-3 px-4">Customer</th>
+                        <th className="py-3 px-4">Expired Plan</th>
+                        <th className="py-3 px-4">Expiry Date</th>
+                        <th className="py-3 px-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                      {expiredPlans.map((sub, i) => {
+                        const daysAgo = Math.floor((new Date() - new Date(sub.endDate)) / (1000 * 60 * 60 * 24));
+                        const dateFormatted = new Date(sub.endDate).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric'
+                        });
+                        return (
+                          <tr key={sub._id || i} className="hover:bg-slate-800/20 transition-colors">
+                            <td className="py-4 px-4 font-medium text-white">
+                              {sub.car?.model || 'Unknown'} <span className="text-xs text-slate-500">({sub.car?.number})</span>
+                            </td>
+                            <td className="py-4 px-4 text-sm">
+                              {sub.customer?.name || 'Unknown'}
+                            </td>
+                            <td className="py-4 px-4 text-sm">
+                              {sub.plan?.name || 'N/A'}
+                            </td>
+                            <td className="py-4 px-4 text-sm">
+                              <span className="text-rose-400 font-semibold">{dateFormatted}</span>
+                              <span className="ml-2 text-xs text-slate-500">({daysAgo > 0 ? `${daysAgo} days ago` : 'today'})</span>
+                            </td>
+                            <td className="py-4 px-4 text-right">
+                              <button 
+                                onClick={() => setSelectedExpiredPlan(sub)}
+                                className="bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
+                              >
+                                View Details
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-slate-400 text-sm">No expired subscriptions found. All active users have valid plans.</p>
+              )}
             </div>
           </div>
         );
@@ -263,7 +329,7 @@ const AdminDashboard = () => {
                   onChange={e => setCarForm({...carForm, planId: e.target.value})}
                 >
                   <option value="" disabled>Select Plan</option>
-                  {plans.map(p => <option key={p._id || p.id} value={p._id || p.id}>{p.name} - ${p.price}</option>)}
+                  {plans.map(p => <option key={p._id || p.id} value={p._id || p.id}>{p.name} - ₹{p.price}</option>)}
                 </select>
 
                 <select 
@@ -713,6 +779,103 @@ const AdminDashboard = () => {
           {renderContent()}
         </div>
       </main>
+
+      {selectedExpiredPlan && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative">
+            <h3 className="text-2xl font-bold text-white mb-4">Subscription Details</h3>
+            
+            <div className="space-y-4 text-slate-300">
+              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-rose-400 uppercase font-semibold tracking-wider">Plan Expiry Status</p>
+                  <p className="text-base text-white font-semibold mt-1">
+                    Expired on {new Date(selectedExpiredPlan.endDate).toLocaleDateString('en-IN', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+                <div className="bg-rose-500/20 text-rose-400 text-xs px-3 py-1.5 rounded-full font-bold">
+                  {Math.floor((new Date() - new Date(selectedExpiredPlan.endDate)) / (1000 * 60 * 60 * 24))} Days Ago
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
+                  <p className="text-xs text-slate-500">Customer Name</p>
+                  <p className="text-base font-semibold text-white mt-1">{selectedExpiredPlan.customer?.name || 'N/A'}</p>
+                </div>
+                <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
+                  <p className="text-xs text-slate-500">Phone Number</p>
+                  <p className="text-base font-semibold text-white mt-1">{selectedExpiredPlan.customer?.phone || 'N/A'}</p>
+                </div>
+                <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
+                  <p className="text-xs text-slate-500">Car Model</p>
+                  <p className="text-base font-semibold text-white mt-1">{selectedExpiredPlan.car?.model || 'N/A'}</p>
+                </div>
+                <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
+                  <p className="text-xs text-slate-500">Car Number</p>
+                  <p className="text-base font-semibold text-white mt-1">{selectedExpiredPlan.car?.number || 'N/A'}</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
+                <p className="text-xs text-slate-500">Expired Subscription Plan</p>
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-base font-semibold text-white">
+                    {selectedExpiredPlan.plan?.name || 'N/A'} <span className="text-xs text-slate-400 font-normal">({selectedExpiredPlan.plan?.seaterType})</span>
+                  </p>
+                  <p className="text-lg font-bold text-blue-400">₹{selectedExpiredPlan.plan?.price || 0}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-xs text-slate-500">
+                <div>
+                  <span>Started: </span>
+                  <span className="text-slate-400 font-medium">
+                    {new Date(selectedExpiredPlan.startDate).toLocaleDateString('en-IN')}
+                  </span>
+                </div>
+                <div>
+                  <span>Expired: </span>
+                  <span className="text-slate-400 font-medium">
+                    {new Date(selectedExpiredPlan.endDate).toLocaleDateString('en-IN')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex gap-3">
+              <button 
+                onClick={() => {
+                  const carToEdit = {
+                    ...selectedExpiredPlan.car,
+                    owner: selectedExpiredPlan.customer || selectedExpiredPlan.car?.owner,
+                    planId: selectedExpiredPlan.plan?._id || selectedExpiredPlan.plan?.id || '',
+                    startDate: '',
+                    endDate: ''
+                  };
+                  handleEditCarClick(carToEdit);
+                  setActiveTab('cars');
+                  setSelectedExpiredPlan(null);
+                }}
+                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition-colors text-center text-sm"
+              >
+                Renew Plan
+              </button>
+              <button 
+                onClick={() => setSelectedExpiredPlan(null)}
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-medium transition-colors border border-slate-700 text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
