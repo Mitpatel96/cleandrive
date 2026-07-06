@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Car, CreditCard, MessageSquare, LayoutDashboard, Settings, LogOut, CheckCircle, Clock, UserPlus, MapPin, Home, Camera, Menu, X } from 'lucide-react';
+import { Car, CreditCard, MessageSquare, LayoutDashboard, Settings, LogOut, CheckCircle, Clock, UserPlus, MapPin, Home, Camera, Menu, X, Coins } from 'lucide-react';
 import api from '../../lib/api';
 
 const AdminDashboard = () => {
@@ -12,6 +12,7 @@ const AdminDashboard = () => {
   const [cars, setCars] = useState([]);
   const [expiredPlans, setExpiredPlans] = useState([]);
   const [selectedExpiredPlan, setSelectedExpiredPlan] = useState(null);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [plans, setPlans] = useState([]);
   const [staffList, setStaffList] = useState([]);
   const [enquiries, setEnquiries] = useState([]);
@@ -45,14 +46,25 @@ const AdminDashboard = () => {
             setExpiredPlans(res.data.data.expiredSubscriptions || []);
           }
         } else if (activeTab === 'enquiries') {
-          const res = await api.get('/admin/enquiries');
-          setEnquiries(res.data.data ? res.data.data : res.data);
+          const [enqRes, plansRes] = await Promise.all([
+            api.get('/admin/enquiries'),
+            api.get('/admin/plans')
+          ]);
+          setEnquiries(enqRes.data.data ? enqRes.data.data : enqRes.data);
+          setPlans(plansRes.data.data ? plansRes.data.data : plansRes.data);
         } else if (activeTab === 'plans') {
           const res = await api.get('/admin/plans');
           setPlans(res.data.data ? res.data.data : res.data);
         } else if (activeTab === 'washlist') {
-          const res = await api.get(`/admin/daily-washes?date=${washListDate}`);
-          setDailyWashes(res.data.data ? res.data.data : res.data);
+          const [washesRes, staffRes] = await Promise.all([
+            api.get(`/admin/daily-washes?date=${washListDate}`),
+            api.get('/admin/staff')
+          ]);
+          setDailyWashes(washesRes.data.data ? washesRes.data.data : washesRes.data);
+          setStaffList(staffRes.data.data ? staffRes.data.data : staffRes.data);
+        } else if (activeTab === 'subscriptions') {
+          const res = await api.get('/admin/subscriptions');
+          setSubscriptions(res.data.data ? res.data.data : res.data);
         } else if (activeTab === 'users') {
           const res = await api.get('/admin/users');
           setSystemUsers(res.data.data ? res.data.data : res.data);
@@ -199,6 +211,71 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleConvertEnquiry = (enq) => {
+    let matchedPlanId = '';
+    if (enq.preferredPlan) {
+      const matchedPlan = plans.find(p => p.name.toLowerCase().includes(enq.preferredPlan.toLowerCase()) || enq.preferredPlan.toLowerCase().includes(p.name.toLowerCase()));
+      if (matchedPlan) matchedPlanId = matchedPlan._id || matchedPlan.id;
+    }
+
+    setCarForm({
+      name: enq.fullName || enq.name || '',
+      phone: enq.phone || '',
+      carNumber: '',
+      carModel: enq.carType || '',
+      address: enq.address || '',
+      location: '',
+      planId: matchedPlanId,
+      staffId: '',
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+      preferredWashDay: ''
+    });
+
+    setActiveTab('cars');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    alert(`Enquiry details copied successfully! Complete the details and select staff.`);
+  };
+
+  const handleReassignStaff = async (washId, newStaffId) => {
+    try {
+      const res = await api.put(`/admin/wash-schedules/${washId}`, { staff: newStaffId || null });
+      if (res.data.success) {
+        alert('Staff reassigned successfully');
+        setDailyWashes(dailyWashes.map(w => (w._id === washId || w.id === washId) ? { ...w, staff: res.data.data.staff } : w));
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Failed to reassign staff');
+    }
+  };
+
+  const handleUpdatePaymentStatus = async (subId, newPaymentStatus) => {
+    try {
+      const res = await api.put(`/admin/subscriptions/${subId}`, { paymentStatus: newPaymentStatus });
+      if (res.data.success) {
+        alert('Payment status updated successfully');
+        setSubscriptions(subscriptions.map(s => (s._id === subId || s.id === subId) ? { ...s, paymentStatus: newPaymentStatus } : s));
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Failed to update payment status');
+    }
+  };
+
+  const handleUpdateSubStatus = async (subId, newStatus) => {
+    try {
+      const res = await api.put(`/admin/subscriptions/${subId}`, { status: newStatus });
+      if (res.data.success) {
+        alert('Subscription status updated successfully');
+        setSubscriptions(subscriptions.map(s => (s._id === subId || s.id === subId) ? { ...s, status: newStatus } : s));
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Failed to update subscription status');
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
@@ -214,6 +291,7 @@ const AdminDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'cars', label: 'Add Car', icon: Car },
     { id: 'plans', label: 'Add Plan', icon: CreditCard },
+    { id: 'subscriptions', label: 'Subscriptions', icon: Coins },
     { id: 'enquiries', label: 'Enquiries', icon: MessageSquare },
     { id: 'washlist', label: 'Wash List', icon: CheckCircle },
     { id: 'users', label: 'System Users', icon: UserPlus },
@@ -491,6 +569,88 @@ const AdminDashboard = () => {
             </div>
           </div>
         );
+      case 'subscriptions':
+        return (
+          <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-xl min-h-[400px]">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <Coins className="w-6 h-6 text-blue-400" /> Subscriptions & Payments
+            </h2>
+            <div className="space-y-4">
+              {subscriptions.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-slate-300 border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-700/50 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                        <th className="py-3 px-4">Customer & Car</th>
+                        <th className="py-3 px-4">Plan Info</th>
+                        <th className="py-3 px-4">Dates</th>
+                        <th className="py-3 px-4">Payment Status</th>
+                        <th className="py-3 px-4">Sub Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                      {subscriptions.map((sub, i) => {
+                        const isExpired = new Date(sub.endDate) < new Date();
+                        return (
+                          <tr key={sub._id || i} className="hover:bg-slate-800/20 transition-colors">
+                            <td className="py-4 px-4">
+                              <div className="font-medium text-white">{sub.customer?.name || 'Unknown'}</div>
+                              <div className="text-xs text-slate-400">{sub.customer?.phone || ''}</div>
+                              <div className="text-xs text-slate-500 mt-1">{sub.car?.model || 'Unknown'} ({sub.car?.number || ''})</div>
+                            </td>
+                            <td className="py-4 px-4 text-sm">
+                              <div className="font-semibold text-slate-200">{sub.plan?.name || 'N/A'}</div>
+                              <div className="text-xs text-blue-400 mt-0.5">₹{sub.plan?.price || 0}</div>
+                            </td>
+                            <td className="py-4 px-4 text-sm">
+                              <div className="text-slate-300">Start: {new Date(sub.startDate).toLocaleDateString('en-IN')}</div>
+                              <div className="text-slate-300 mt-0.5">End: {new Date(sub.endDate).toLocaleDateString('en-IN')}</div>
+                              {isExpired && sub.status === 'Active' && (
+                                <span className="text-[10px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded font-bold mt-1 inline-block">Past End Date</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-4 text-sm">
+                              <select
+                                value={sub.paymentStatus || 'Unpaid'}
+                                onChange={(e) => handleUpdatePaymentStatus(sub._id || sub.id, e.target.value)}
+                                className={`border rounded-lg px-2 py-1 text-xs font-semibold focus:outline-none transition-colors ${
+                                  sub.paymentStatus === 'Paid' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                  sub.paymentStatus === 'Partial' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                                  'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                                } [&>option]:bg-slate-900 [&>option]:text-white`}
+                              >
+                                <option value="Unpaid">Unpaid</option>
+                                <option value="Partial">Partial</option>
+                                <option value="Paid">Paid</option>
+                              </select>
+                            </td>
+                            <td className="py-4 px-4 text-sm">
+                              <select
+                                value={sub.status || 'Active'}
+                                onChange={(e) => handleUpdateSubStatus(sub._id || sub.id, e.target.value)}
+                                className={`border rounded-lg px-2 py-1 text-xs font-semibold focus:outline-none transition-colors ${
+                                  sub.status === 'Active' && !isExpired ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                  sub.status === 'Expired' || isExpired ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' :
+                                  'bg-slate-500/20 text-slate-400 border-slate-500/30'
+                                } [&>option]:bg-slate-900 [&>option]:text-white`}
+                              >
+                                <option value="Active">Active</option>
+                                <option value="Expired">Expired</option>
+                                <option value="Cancelled">Cancelled</option>
+                              </select>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-slate-400 text-sm">No subscriptions found.</p>
+              )}
+            </div>
+          </div>
+        );
       case 'enquiries':
         return (
           <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl shadow-xl min-h-[400px]">
@@ -518,7 +678,7 @@ const AdminDashboard = () => {
                     </div>
                     <p className="text-xs text-slate-500 mt-4">{new Date(enq.createdAt || Date.now()).toLocaleString()}</p>
                   </div>
-                  <div className="shrink-0">
+                  <div className="shrink-0 flex flex-col items-end gap-2">
                     <select 
                       value={enq.status || 'New'}
                       onChange={(e) => handleEnquiryStatusChange(enq._id || enq.id, e.target.value)}
@@ -534,6 +694,15 @@ const AdminDashboard = () => {
                       <option value="Converted">Converted</option>
                       <option value="Rejected">Rejected</option>
                     </select>
+
+                    {enq.status !== 'Converted' && (
+                      <button
+                        onClick={() => handleConvertEnquiry(enq)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg transition-colors font-medium w-full text-center"
+                      >
+                        Convert to Customer
+                      </button>
+                    )}
                   </div>
                 </div>
               )) : (
@@ -580,10 +749,20 @@ const AdminDashboard = () => {
                             <Home className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
                             <span>{wash.car?.address || 'No address provided'}</span>
                           </p>
-                          <p className="text-slate-400 text-sm flex items-center gap-2">
+                          <div className="text-slate-400 text-sm flex items-center gap-2">
                             <UserPlus className="w-4 h-4 text-slate-500 shrink-0" />
-                            <span>Assigned to: <strong className="text-slate-300">{wash.staff?.name || 'Unassigned'}</strong></span>
-                          </p>
+                            <span>Assigned to: </span>
+                            <select
+                              value={wash.staff?._id || wash.staff?.id || ''}
+                              onChange={(e) => handleReassignStaff(wash._id || wash.id, e.target.value)}
+                              className="bg-slate-800 text-slate-200 border border-slate-700/50 rounded-lg px-2 py-0.5 text-xs focus:outline-none focus:border-blue-500 transition-colors [&>option]:bg-slate-900"
+                            >
+                              <option value="">Unassigned</option>
+                              {staffList.map(s => (
+                                <option key={s._id || s.id} value={s._id || s.id}>{s.name}</option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -359,3 +359,58 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
+exports.getSubscriptions = async (req, res) => {
+  try {
+    const subscriptions = await Subscription.find()
+      .populate('customer car plan')
+      .sort({ createdAt: -1 });
+    res.status(200).json({ success: true, data: subscriptions });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+exports.updateSubscriptionPayment = async (req, res) => {
+  try {
+    const { paymentStatus, status, startDate, endDate } = req.body;
+    const subscription = await Subscription.findById(req.params.id);
+    if (!subscription) {
+      return res.status(404).json({ success: false, message: 'Subscription not found' });
+    }
+
+    if (paymentStatus) subscription.paymentStatus = paymentStatus;
+    if (status) subscription.status = status;
+    if (startDate) subscription.startDate = new Date(startDate);
+    if (endDate) subscription.endDate = new Date(endDate);
+
+    await subscription.save();
+    
+    const populatedSub = await Subscription.findById(subscription._id).populate('customer car plan');
+    res.status(200).json({ success: true, data: populatedSub });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+exports.updateWashSchedule = async (req, res) => {
+  try {
+    const { staff, date, status } = req.body;
+    const schedule = await WashSchedule.findById(req.params.id);
+    if (!schedule) {
+      return res.status(404).json({ success: false, message: 'Wash schedule not found' });
+    }
+
+    if (staff !== undefined) schedule.staff = staff || null;
+    if (date) schedule.date = new Date(date);
+    if (status) schedule.status = status;
+
+    await schedule.save();
+    
+    const populatedSchedule = await WashSchedule.findById(schedule._id).populate('car staff');
+    res.status(200).json({ success: true, data: populatedSchedule });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+
