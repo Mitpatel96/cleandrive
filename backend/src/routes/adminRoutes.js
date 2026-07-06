@@ -2,7 +2,7 @@ const express = require('express');
 const {
   getCars, createCar, updateCar, getPlans, createPlan, updatePlan, getStaff,
   getWashSchedules, getEnquiries, updateEnquiryStatus, getDailyWashList, getPendingWashTracker,
-  getSystemUsers, updateSystemUser, getDashboardStats, getSubscriptions, updateSubscriptionPayment, updateWashSchedule
+  getSystemUsers, updateSystemUser, getDashboardStats, getSubscriptions, updateSubscriptionPayment, updateWashSchedule, renewSubscription
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -26,6 +26,7 @@ router.route('/pending-washes').get(getPendingWashTracker);
 router.route('/stats').get(getDashboardStats);
 router.route('/subscriptions').get(getSubscriptions);
 router.route('/subscriptions/:id').put(updateSubscriptionPayment);
+router.route('/subscriptions/:id/renew').post(renewSubscription);
 
 module.exports = router;
 

@@ -12,6 +12,7 @@ const AdminDashboard = () => {
   const [cars, setCars] = useState([]);
   const [expiredPlans, setExpiredPlans] = useState([]);
   const [selectedExpiredPlan, setSelectedExpiredPlan] = useState(null);
+  const [alerts, setAlerts] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [plans, setPlans] = useState([]);
   const [staffList, setStaffList] = useState([]);
@@ -44,6 +45,7 @@ const AdminDashboard = () => {
               pendingWashes: res.data.data.pendingWashes || 0
             });
             setExpiredPlans(res.data.data.expiredSubscriptions || []);
+            setAlerts(res.data.data.expiringSubscriptions || []);
           }
         } else if (activeTab === 'enquiries') {
           const [enqRes, plansRes] = await Promise.all([
@@ -94,6 +96,69 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error(error);
       alert('Failed to update enquiry status');
+    }
+  };
+
+  const handleCarFormPlanChange = (planId) => {
+    const selectedPlan = plans.find(p => (p._id || p.id) === planId);
+    const startDate = carForm.startDate || new Date().toISOString().split('T')[0];
+    let endDate = carForm.endDate;
+    if (selectedPlan && selectedPlan.durationDays) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + selectedPlan.durationDays);
+      endDate = d.toISOString().split('T')[0];
+    }
+    setCarForm(prev => ({
+      ...prev,
+      planId,
+      startDate,
+      endDate
+    }));
+  };
+
+  const handleCarFormStartDateChange = (startDate) => {
+    const selectedPlan = plans.find(p => (p._id || p.id) === carForm.planId);
+    let endDate = carForm.endDate;
+    if (selectedPlan && selectedPlan.durationDays && startDate) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + selectedPlan.durationDays);
+      endDate = d.toISOString().split('T')[0];
+    }
+    setCarForm(prev => ({
+      ...prev,
+      startDate,
+      endDate
+    }));
+  };
+
+  const handleQuickRenew = async (subId) => {
+    try {
+      const confirmRenew = window.confirm("Are you sure you want to quick-renew this subscription with 1-click?");
+      if (!confirmRenew) return;
+
+      const res = await api.post(`/admin/subscriptions/${subId}/renew`);
+      if (res.data && res.data.success) {
+        alert("Subscription renewed successfully! Next wash scheduled.");
+        // Refresh dashboard stats & alert banners
+        if (activeTab === 'dashboard') {
+          const statsRes = await api.get('/admin/stats');
+          if (statsRes.data && statsRes.data.data) {
+            setStats({
+              revenue: statsRes.data.data.revenue || 0,
+              activePlans: statsRes.data.data.activePlans || 0,
+              pendingWashes: statsRes.data.data.pendingWashes || 0
+            });
+            setExpiredPlans(statsRes.data.data.expiredSubscriptions || []);
+            setAlerts(statsRes.data.data.expiringSubscriptions || []);
+          }
+        } else if (activeTab === 'subscriptions') {
+          const subsRes = await api.get('/admin/subscriptions');
+          setSubscriptions(subsRes.data.data ? subsRes.data.data : subsRes.data);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || 'Failed to renew subscription');
     }
   };
 
@@ -302,6 +367,72 @@ const AdminDashboard = () => {
       case 'dashboard':
         return (
           <div className="space-y-8">
+            {alerts.length > 0 && (
+              <div className="space-y-3">
+                {alerts.map((sub, i) => {
+                  const expiryDate = new Date(sub.endDate);
+                  const today = new Date();
+                  today.setHours(0,0,0,0);
+                  const isExpired = expiryDate < today;
+                  const daysDiff = Math.round((expiryDate - today) / (1000 * 60 * 60 * 24));
+                  
+                  return (
+                    <div 
+                      key={sub._id || i} 
+                      className={`p-4 rounded-2xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${
+                        isExpired 
+                          ? 'bg-rose-500/10 border-rose-500/20 text-rose-300' 
+                          : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{isExpired ? '🚨' : '⚠️'}</span>
+                        <div>
+                          <p className="font-semibold text-white text-sm">
+                            {isExpired 
+                              ? `Subscription for ${sub.car?.model || 'Car'} (${sub.car?.number}) expired ${Math.abs(daysDiff)} day(s) ago` 
+                              : `Subscription for ${sub.car?.model || 'Car'} (${sub.car?.number}) is expiring in ${daysDiff} day(s)`
+                            }
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Customer: {sub.customer?.name || 'Unknown'} ({sub.customer?.phone}) | Plan: {sub.plan?.name || 'N/A'} (Expiry: {expiryDate.toLocaleDateString('en-IN')})
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button 
+                          onClick={() => handleQuickRenew(sub._id || sub.id)}
+                          className="text-xs px-3 py-1.5 rounded-lg font-bold bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-200 transition-colors"
+                        >
+                          Quick Renew (1-Click)
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const carToEdit = {
+                              ...sub.car,
+                              owner: sub.customer || sub.car?.owner,
+                              planId: sub.plan?._id || sub.plan?.id || '',
+                              startDate: '',
+                              endDate: ''
+                            };
+                            handleEditCarClick(carToEdit);
+                            setActiveTab('cars');
+                          }}
+                          className={`text-xs px-3 py-1.5 rounded-lg font-medium border transition-colors ${
+                            isExpired 
+                              ? 'bg-rose-500/20 hover:bg-rose-500/30 border-rose-500/30 text-rose-200' 
+                              : 'bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/30 text-amber-200'
+                          }`}
+                        >
+                          Renew (Manual)
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-6 rounded-3xl shadow-xl">
                 <h3 className="text-slate-400 text-sm font-medium">Total Revenue</h3>
@@ -363,12 +494,18 @@ const AdminDashboard = () => {
                               <span className="text-rose-400 font-semibold">{dateFormatted}</span>
                               <span className="ml-2 text-xs text-slate-500">({daysAgo > 0 ? `${daysAgo} days ago` : 'today'})</span>
                             </td>
-                            <td className="py-4 px-4 text-right">
+                            <td className="py-4 px-4 text-right flex justify-end gap-2">
+                              <button 
+                                onClick={() => handleQuickRenew(sub._id || sub.id)}
+                                className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 text-xs px-3 py-1.5 rounded-lg transition-colors font-semibold"
+                              >
+                                Quick Renew
+                              </button>
                               <button 
                                 onClick={() => setSelectedExpiredPlan(sub)}
                                 className="bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
                               >
-                                View Details
+                                Details
                               </button>
                             </td>
                           </tr>
@@ -404,7 +541,7 @@ const AdminDashboard = () => {
                   required
                   className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors [&>option]:bg-slate-900"
                   value={carForm.planId} 
-                  onChange={e => setCarForm({...carForm, planId: e.target.value})}
+                  onChange={e => handleCarFormPlanChange(e.target.value)}
                 >
                   <option value="" disabled>Select Plan</option>
                   {plans.map(p => <option key={p._id || p.id} value={p._id || p.id}>{p.name} - ₹{p.price}</option>)}
@@ -421,7 +558,7 @@ const AdminDashboard = () => {
                 </select>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-slate-400 pl-1">Start Date</label>
-                  <input type="date" required className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]" value={carForm.startDate} onChange={e => setCarForm({...carForm, startDate: e.target.value})} />
+                  <input type="date" required className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]" value={carForm.startDate} onChange={e => handleCarFormStartDateChange(e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-slate-400 pl-1">End Date</label>
@@ -1025,33 +1162,42 @@ const AdminDashboard = () => {
                   </span>
                 </div>
               </div>
-            </div>
-
-            <div className="mt-8 flex gap-3">
-              <button 
-                onClick={() => {
-                  const carToEdit = {
-                    ...selectedExpiredPlan.car,
-                    owner: selectedExpiredPlan.customer || selectedExpiredPlan.car?.owner,
-                    planId: selectedExpiredPlan.plan?._id || selectedExpiredPlan.plan?.id || '',
-                    startDate: '',
-                    endDate: ''
-                  };
-                  handleEditCarClick(carToEdit);
-                  setActiveTab('cars');
-                  setSelectedExpiredPlan(null);
-                }}
-                className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition-colors text-center text-sm"
-              >
-                Renew Plan
-              </button>
+                <div className="mt-8 flex flex-col gap-2">
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    handleQuickRenew(selectedExpiredPlan._id || selectedExpiredPlan.id);
+                    setSelectedExpiredPlan(null);
+                  }}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold transition-colors text-center text-sm"
+                >
+                  Quick Renew (1-Click)
+                </button>
+                <button 
+                  onClick={() => {
+                    const carToEdit = {
+                      ...selectedExpiredPlan.car,
+                      owner: selectedExpiredPlan.customer || selectedExpiredPlan.car?.owner,
+                      planId: selectedExpiredPlan.plan?._id || selectedExpiredPlan.plan?.id || '',
+                      startDate: '',
+                      endDate: ''
+                    };
+                    handleEditCarClick(carToEdit);
+                    setActiveTab('cars');
+                    setSelectedExpiredPlan(null);
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition-colors text-center text-sm"
+                >
+                  Renew (Manual)
+                </button>
+              </div>
               <button 
                 onClick={() => setSelectedExpiredPlan(null)}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-medium transition-colors border border-slate-700 text-sm"
+                className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-medium transition-colors border border-slate-700 text-sm"
               >
                 Close
               </button>
-            </div>
+            </div>           </div>
           </div>
         </div>
       )}

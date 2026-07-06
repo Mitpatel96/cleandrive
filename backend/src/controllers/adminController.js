@@ -345,13 +345,25 @@ exports.getDashboardStats = async (req, res) => {
       }
     }
 
+    // Find subscriptions expiring or expired within 2 days
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const twoDaysFromNow = new Date();
+    twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+
+    const alertSubs = await Subscription.find({
+      status: { $in: ['Active', 'Expired'] },
+      endDate: { $gte: twoDaysAgo, $lte: twoDaysFromNow }
+    }).populate('customer car plan').sort({ endDate: 1 });
+
     res.status(200).json({
       success: true,
       data: {
         revenue,
         activePlans,
         pendingWashes,
-        expiredSubscriptions: uniqueExpired
+        expiredSubscriptions: uniqueExpired,
+        expiringSubscriptions: alertSubs
       }
     });
   } catch (err) {
@@ -412,5 +424,61 @@ exports.updateWashSchedule = async (req, res) => {
     res.status(400).json({ success: false, error: err.message });
   }
 };
+
+exports.renewSubscription = async (req, res) => {
+  try {
+    const expiredSub = await Subscription.findById(req.params.id).populate('plan car');
+    if (!expiredSub) {
+      return res.status(404).json({ success: false, message: 'Subscription not found' });
+    }
+
+    // New start date is today or day after old end date, whichever is later
+    let startDate = new Date();
+    if (new Date(expiredSub.endDate) > startDate) {
+      startDate = new Date(expiredSub.endDate);
+      startDate.setDate(startDate.getDate() + 1);
+    }
+    startDate.setHours(0, 0, 0, 0);
+
+    const durationDays = expiredSub.plan?.durationDays || 30;
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + durationDays);
+    endDate.setHours(23, 59, 59, 999);
+
+    // Create new subscription
+    const newSub = await Subscription.create({
+      customer: expiredSub.customer,
+      car: expiredSub.car?._id || expiredSub.car,
+      plan: expiredSub.plan?._id || expiredSub.plan,
+      startDate,
+      endDate,
+      status: 'Active',
+      paymentStatus: 'Unpaid',
+      preferredWashDay: expiredSub.preferredWashDay
+    });
+
+    // Mark previous subscription as Expired
+    expiredSub.status = 'Expired';
+    await expiredSub.save();
+
+    // Create a new pending wash schedule for this renewal
+    let washDate = new Date(startDate);
+    if (expiredSub.preferredWashDay !== undefined && expiredSub.preferredWashDay !== null) {
+      washDate = getNextDayOfWeek(washDate, expiredSub.preferredWashDay);
+    }
+    
+    await WashSchedule.create({
+      car: expiredSub.car?._id || expiredSub.car,
+      date: washDate,
+      staff: expiredSub.car?.defaultAssignedStaff || null,
+      status: 'Pending'
+    });
+
+    res.status(200).json({ success: true, data: newSub });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
 
 
