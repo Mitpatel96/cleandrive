@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --brand: #225c4a;
+  --brand-dark: #194438;
+  --brand-light: #2f7a61;
+  --ink: #0f1a16;
+  --paper: #ffffff;
+  --paper-tint: #f5f2ea;
+  --line: #e6e1d5;
+}
+
+html, body {
+  padding: 0;
+  margin: 0;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: #225c4a;
+  color: #fff;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #f5f2ea; }
+::-webkit-scrollbar-thumb { background: #225c4a; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #194438; }
+
+/* Grain overlay */
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.13 0 0 0 0 0.36 0 0 0 0 0.29 0 0 0 0.35 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/></svg>");
+  opacity: 0.5;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+/* Marquee */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee 40s linear infinite;
+}
+
+/* Fade up */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fadeUp 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Ticker rotate */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+.float-slow { animation: floatSlow 6s ease-in-out infinite; }
+
+/* Underline sweep */
+.link-sweep {
+  position: relative;
+}
+.link-sweep::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.4s cubic-bezier(0.7,0,0.2,1);
+}
+.link-sweep:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Tab underline animation */
+.tab-active {
+  background: #225c4a;
+  color: #fff;
+}
+.tab-inactive {
+  background: transparent;
+  color: #0f1a16;
+}
+.tab-inactive:hover {
+  background: #f5f2ea;
+}
+
+.pill-btn {
+  transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+.pill-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -12px rgba(34, 92, 74, 0.55);
+}
+
+/* Sharp corner card */
+.sharp-card {
+  transition: transform 0.35s cubic-bezier(0.2,0.7,0.2,1), box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.sharp-card:hover {
+  transform: translateY(-6px);
+  border-color: #225c4a;
+  box-shadow: 0 30px 60px -30px rgba(15, 26, 22, 0.25);
+}
