@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import {
   Ship,
   Plane,
@@ -36,6 +36,8 @@ import {
   ChevronRight,
   Menu,
   X,
+  Calculator,
+  Info,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -87,6 +89,7 @@ const Nav = () => {
   const [open, setOpen] = useState(false);
   const links = [
     { label: "Services", href: "#services" },
+    { label: "Estimator", href: "#estimator" },
     { label: "Why Us", href: "#why" },
     { label: "Food & Beverage", href: "#food" },
     { label: "Get Quote", href: "#quote" },
@@ -199,6 +202,9 @@ const Hero = () => (
               Explore Services
             </PillBtn>
           </a>
+          <a href="#estimator" className="hidden sm:inline-flex items-center gap-2 self-center text-[13px] font-semibold text-brand link-sweep px-2" data-testid="hero-estimator-link">
+            <Calculator className="h-4 w-4" /> Try the landed-cost estimator
+          </a>
         </div>
 
         {/* Trust row */}
@@ -284,6 +290,234 @@ const Hero = () => (
     </div>
   </Section>
 );
+
+/* ------------------------------------------------------------------ */
+/*  Landed Cost Estimator                                              */
+/* ------------------------------------------------------------------ */
+const FREIGHT_RATES = {
+  // AUD per kg, indicative
+  "China-sea":   { rate: 0.55, label: "Sea · LCL", eta: "28–35 days" },
+  "China-air":   { rate: 6.50, label: "Air Freight", eta: "4–7 days" },
+  "India-sea":   { rate: 0.70, label: "Sea · LCL", eta: "24–30 days" },
+  "India-air":   { rate: 5.80, label: "Air Freight", eta: "5–8 days" },
+};
+
+const money = (n) =>
+  new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency: "AUD",
+    maximumFractionDigits: 0,
+  }).format(Math.max(0, Math.round(n)));
+
+const LandedCostEstimator = () => {
+  const [origin, setOrigin] = useState("China");
+  const [mode, setMode] = useState("sea");
+  const [value, setValue] = useState(5000);
+  const [weight, setWeight] = useState(200);
+  const [duty, setDuty] = useState(5);
+
+  const calc = useMemo(() => {
+    const key = `${origin}-${mode}`;
+    const meta = FREIGHT_RATES[key];
+    const v = Number(value) || 0;
+    const w = Number(weight) || 0;
+    const d = Number(duty) || 0;
+    const freight = Math.max(45, w * meta.rate); // min quote floor
+    const dutyAmt = v * (d / 100);
+    const gst = (v + freight + dutyAmt) * 0.10;
+    const landed = v + freight + dutyAmt + gst;
+    return { freight, dutyAmt, gst, landed, meta };
+  }, [origin, mode, value, weight, duty]);
+
+  return (
+    <Section id="estimator" className="pb-14 md:pb-20">
+      <div className="relative overflow-hidden bg-brand text-white rounded-[12px] p-6 md:p-10">
+        {/* subtle pattern */}
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-[0.08] pointer-events-none"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)",
+            backgroundSize: "22px 22px",
+          }}
+        />
+        <div className="relative grid lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          {/* Header column */}
+          <div className="lg:col-span-4">
+            <div className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] font-semibold text-white/80">
+              <Calculator className="h-4 w-4" /> Landed Cost Estimator
+            </div>
+            <h2 className="font-display font-semibold text-[32px] md:text-[42px] leading-[1.05] tracking-[-0.02em] mt-4">
+              What will it <span className="italic">really</span> cost me?
+            </h2>
+            <p className="mt-4 text-[14px] leading-[1.7] text-white/75 max-w-[360px]">
+              Get an instant, all-in landed-cost estimate — freight, customs duty
+              and Australian GST included. No sign-up, no email required.
+            </p>
+            <div className="mt-5 flex items-start gap-2 text-[12px] text-white/70 leading-[1.6]">
+              <Info className="h-4 w-4 shrink-0 mt-0.5" />
+              Indicative only. Actual quotes may vary by HS-code, incoterm and cargo type.
+            </div>
+          </div>
+
+          {/* Form column */}
+          <div className="lg:col-span-5 grid sm:grid-cols-2 gap-4">
+            {/* Origin */}
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70 mb-2">
+                Origin country
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {["China", "India"].map((o) => (
+                  <button
+                    key={o}
+                    type="button"
+                    onClick={() => setOrigin(o)}
+                    data-testid={`est-origin-${o.toLowerCase()}`}
+                    className={`py-2.5 rounded-full text-[13px] font-semibold uppercase tracking-[0.14em] transition border ${
+                      origin === o
+                        ? "bg-white text-brand border-white"
+                        : "bg-transparent text-white border-white/30 hover:border-white"
+                    }`}
+                  >
+                    {o}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Mode */}
+            <div className="sm:col-span-2">
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70 mb-2">
+                Shipping mode
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: "sea", label: "Sea · LCL", icon: Ship },
+                  { id: "air", label: "Air Freight", icon: Plane },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setMode(m.id)}
+                    data-testid={`est-mode-${m.id}`}
+                    className={`inline-flex items-center justify-center gap-2 py-2.5 rounded-full text-[13px] font-semibold uppercase tracking-[0.14em] transition border ${
+                      mode === m.id
+                        ? "bg-white text-brand border-white"
+                        : "bg-transparent text-white border-white/30 hover:border-white"
+                    }`}
+                  >
+                    <m.icon className="h-4 w-4" /> {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Value */}
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70 mb-2">
+                Product value (AUD)
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 text-[14px]">$</span>
+                <input
+                  type="number"
+                  value={value}
+                  min={0}
+                  onChange={(e) => setValue(e.target.value)}
+                  data-testid="est-value"
+                  className="w-full bg-white/10 border border-white/25 rounded-[4px] pl-8 pr-4 py-3 text-[14px] text-white placeholder:text-white/50 focus:outline-none focus:border-white focus:bg-white/15 transition"
+                />
+              </div>
+            </div>
+
+            {/* Weight */}
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70 mb-2">
+                Total weight (kg)
+              </label>
+              <input
+                type="number"
+                value={weight}
+                min={0}
+                onChange={(e) => setWeight(e.target.value)}
+                data-testid="est-weight"
+                className="w-full bg-white/10 border border-white/25 rounded-[4px] px-4 py-3 text-[14px] text-white placeholder:text-white/50 focus:outline-none focus:border-white focus:bg-white/15 transition"
+              />
+            </div>
+
+            {/* Duty */}
+            <div className="sm:col-span-2">
+              <label className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70 mb-2">
+                <span>Customs duty rate</span>
+                <span className="text-white">{duty}%</span>
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={20}
+                step={0.5}
+                value={duty}
+                onChange={(e) => setDuty(e.target.value)}
+                data-testid="est-duty"
+                className="w-full accent-white"
+              />
+              <div className="flex justify-between text-[10px] text-white/50 mt-1">
+                <span>0% (most electronics)</span>
+                <span>5% general</span>
+                <span>20%+ (apparel)</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Result column */}
+          <div className="lg:col-span-3">
+            <div className="bg-white text-[#0f1a16] rounded-[8px] p-5 md:p-6">
+              <div className="text-[11px] uppercase tracking-[0.22em] text-brand font-semibold">
+                Estimated landed cost
+              </div>
+              <div
+                className="font-display font-semibold text-[38px] md:text-[44px] leading-none tracking-[-0.02em] mt-2"
+                data-testid="est-total"
+              >
+                {money(calc.landed)}
+              </div>
+              <div className="text-[12px] text-[#7a857f] mt-1">
+                {calc.meta.label} · ETA {calc.meta.eta}
+              </div>
+
+              <div className="mt-5 pt-5 border-t border-[#e6e1d5] space-y-2 text-[13px]">
+                <div className="flex justify-between">
+                  <span className="text-[#3a463f]">Product value</span>
+                  <span className="font-medium">{money(Number(value) || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#3a463f]">Freight</span>
+                  <span className="font-medium">{money(calc.freight)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#3a463f]">Customs duty ({duty}%)</span>
+                  <span className="font-medium">{money(calc.dutyAmt)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#3a463f]">GST (10%)</span>
+                  <span className="font-medium">{money(calc.gst)}</span>
+                </div>
+              </div>
+
+              <a href="#quote" className="mt-5 block">
+                <PillBtn variant="solid" full testid="est-cta">
+                  Get exact quote <ArrowRight className="h-4 w-4" />
+                </PillBtn>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+};
 
 /* ------------------------------------------------------------------ */
 /*  Stats                                                              */
@@ -1019,6 +1253,7 @@ export default function Home() {
     <main className="bg-white">
       <Nav />
       <Hero />
+      <LandedCostEstimator />
       <Stats />
       <ServicesGrid />
       <WhyChoose />
