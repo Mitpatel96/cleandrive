@@ -315,6 +315,7 @@ const LandedCostEstimator = () => {
   const [value, setValue] = useState(5000);
   const [weight, setWeight] = useState(200);
   const [duty, setDuty] = useState(5);
+  const [submitted, setSubmitted] = useState(false);
 
   const calc = useMemo(() => {
     const key = `${origin}-${mode}`;
@@ -506,12 +507,31 @@ const LandedCostEstimator = () => {
                 </div>
               </div>
 
-              <a href="#quote" className="mt-5 block">
-                <PillBtn variant="solid" full testid="est-cta">
-                  Get exact quote <ArrowRight className="h-4 w-4" />
-                </PillBtn>
-              </a>
-            </div>
+              <div className="mt-5">
+                {submitted ? (
+                  <div
+                    className="bg-brand/10 border border-brand rounded-[4px] p-3 flex items-start gap-2"
+                    data-testid="est-success"
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-brand shrink-0 mt-0.5" />
+                    <div className="text-[12px] leading-[1.5] text-[#0f1a16]">
+                      <b className="text-brand">Estimate submitted.</b> Our team will follow up shortly.
+                    </div>
+                  </div>
+                ) : (
+                  <PillBtn
+                    variant="solid"
+                    full
+                    testid="est-submit"
+                    onClick={() => {
+                      setSubmitted(true);
+                      setTimeout(() => setSubmitted(false), 6000);
+                    }}
+                  >
+                    Submit <ArrowRight className="h-4 w-4" />
+                  </PillBtn>
+                )}
+              </div>            </div>
           </div>
         </div>
       </div>
