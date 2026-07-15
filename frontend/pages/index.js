@@ -507,7 +507,7 @@ const LandedCostEstimator = () => {
                 </div>
               </div>
 
-              <div className="mt-5">
+              <div className="mt-5 space-y-3">
                 {submitted ? (
                   <div
                     className="bg-brand/10 border border-brand rounded-[4px] p-3 flex items-start gap-2"
@@ -515,7 +515,9 @@ const LandedCostEstimator = () => {
                   >
                     <CheckCircle2 className="h-4 w-4 text-brand shrink-0 mt-0.5" />
                     <div className="text-[12px] leading-[1.5] text-[#0f1a16]">
-                      <b className="text-brand">Estimate submitted.</b> Our team will follow up shortly.
+                      <b className="text-brand">Thank you for submitting.</b>
+                      <br />
+                      Our team will contact you shortly.
                     </div>
                   </div>
                 ) : (
@@ -525,12 +527,17 @@ const LandedCostEstimator = () => {
                     testid="est-submit"
                     onClick={() => {
                       setSubmitted(true);
-                      setTimeout(() => setSubmitted(false), 6000);
+                      setTimeout(() => setSubmitted(false), 8000);
                     }}
                   >
                     Submit <ArrowRight className="h-4 w-4" />
                   </PillBtn>
                 )}
+                <a href="#quote" className="block">
+                  <PillBtn variant="outline" full testid="est-cta">
+                    Get exact quote <ArrowRight className="h-4 w-4" />
+                  </PillBtn>
+                </a>
               </div>            </div>
           </div>
         </div>
